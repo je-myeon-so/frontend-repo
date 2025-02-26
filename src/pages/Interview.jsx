@@ -2,6 +2,8 @@
 import React, { useState, useEffect, useRef } from 'react';
 import styled from 'styled-components';
 import AiInterviewerGif from '../assets/AI_Interviewer.gif';
+import MainLogo from '../assets/logo.png';
+import { Link } from 'react-router-dom';
 
 const Interview = () => {
   const [isRecording, setIsRecording] = useState(false);
@@ -63,7 +65,7 @@ const Interview = () => {
       };
 
       recorder.onstop = () => {
-        const audioBlob = new Blob(chunks, { type: 'audio/mp3' });
+        const audioBlob = new Blob(chunks, { type: 'audio/wav' });
         downloadRecording(audioBlob);
         
         // Stop all tracks from the stream
@@ -85,7 +87,7 @@ const Interview = () => {
     const a = document.createElement('a');
     a.style.display = 'none';
     a.href = url;
-    a.download = 'interview-recording.mp3';
+    a.download = 'interview-recording.wav';
     document.body.appendChild(a);
     a.click();
     URL.revokeObjectURL(url);
@@ -99,15 +101,15 @@ const Interview = () => {
 
   return (
     <Container>
-
       <Content>
         <InterviewerSection>
+          <Logo>
+            <img src={MainLogo} alt='Je myeon so Logo'/>
+          </Logo>
           <InterviewerVideo>
-            {/* Placeholder for AI interviewer GIF */}
             <img src={AiInterviewerGif} alt="AI Interviewer" />
           </InterviewerVideo>
         </InterviewerSection>
-
         <ControlsSection>
           <TimerContainer>
             <svg width="170" height="170" viewBox="0 0 170 170">
@@ -143,12 +145,8 @@ const Interview = () => {
               </text>
             </svg>
           </TimerContainer>
-
           <RecordButtonContainer>
-            <RecordButton
-              isRecording={isRecording}
-              onClick={handleRecordToggle}
-            >
+            <RecordButton isRecording={isRecording} onClick={handleRecordToggle}>
               <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                 <path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z"></path>
                 <path d="M19 10v2a7 7 0 0 1-14 0v-2"></path>
@@ -174,6 +172,15 @@ const Container = styled.div`
 const Content = styled.div`
   display: flex;
   height: 100vh;
+`;
+
+const Logo = styled.div`
+  position: absolute;
+  top: 35px;
+  left: 30px;
+  img {
+    height: 30px;
+  }
 `;
 
 const InterviewerSection = styled.div`
@@ -212,36 +219,14 @@ const ControlsSection = styled.div`
 `;
 
 const TimerContainer = styled.div`
-  margin-top: 40px;
+  margin-top: 270px;
 `;
 
 const RecordButtonContainer = styled.div`
-  margin-bottom: 40px;
+  margin-bottom: 270px;
   display: flex;
   justify-content: center;
 `;
-
-// const ControlsSection = styled.div`
-//   position: absolute;
-//   right: 50px;
-//   top: 50%;
-//   transform: translateY(-50%);
-//   display: flex;
-//   flex-direction: column;
-//   align-items: center;
-//   gap: 20px;
-// `;
-
-// const TimerContainer = styled.div`
-//   display: flex;
-//   justify-content: center;
-//   align-items: center;
-// `;
-
-// const RecordButtonContainer = styled.div`
-//   display: flex;
-//   justify-content: center;
-// `;
 
 
 const RecordButton = styled.button`
