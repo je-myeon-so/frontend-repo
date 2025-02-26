@@ -306,11 +306,12 @@ const MenuItem = styled.div`
   border-radius: 8px;
   margin-bottom: 0.5rem;
   cursor: pointer;
-  transition: background-color 0.2s;
-  background-color: ${props => props.active ? '#f0f0f5' : 'transparent'};
+  transition: background-color 0.2s, color 0.2s;
   
+  background-color: ${({ active }) => (active ? '#f0f0f5' : 'transparent')};
+
   &:hover {
-    background-color: ${props => props.active ? '#f0f0f5' : '#f8f8f8'};
+    background-color: #f0f0f5 !important;
   }
 `;
 
