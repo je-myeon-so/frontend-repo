@@ -26,7 +26,7 @@ const Result = () => {
 
   const getFeedbackData = async (user, questionnum) => {
     try {
-      const response = await fetch(`/api/result/answer/${questionnum}/feedback?username=${user}`)
+      const response = await fetch(`http://3.35.220.161:8080/api/result/answer/${questionnum}/feedback?username=${user}`)
         .then((res) => res.json())
         .then((data) => {
           console.log(data);
