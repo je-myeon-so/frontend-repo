@@ -1,4 +1,3 @@
-// pages/InterviewPage.tsx
 import React, { useState, useEffect, useRef } from 'react';
 import styled from 'styled-components';
 import AiInterviewerGif from '../assets/AI_Interviewer.gif';
@@ -10,6 +9,7 @@ const Interview = () => {
   const [timer, setTimer] = useState(180); // 3 minutes in seconds
   const [mediaRecorder, setMediaRecorder] = useState(null);
   const [audioChunks, setAudioChunks] = useState([]);
+  const [recordingURL, setRecordingURL] = useState(null);
   const timerIntervalRef = useRef(null);
 
   // Format time as MM:SS
@@ -57,41 +57,69 @@ const Interview = () => {
   const startRecording = async () => {
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      const recorder = new MediaRecorder(stream);
+      // 여기서 오디오 형식을 명시적으로 지정
+      const options = { 
+        mimeType: 'audio/webm;codecs=opus', 
+        audioBitsPerSecond: 128000 
+      };
+      
+      // 브라우저 호환성 체크
+      let recorder;
+      if (MediaRecorder.isTypeSupported('audio/webm;codecs=opus')) {
+        recorder = new MediaRecorder(stream, options);
+      } else if (MediaRecorder.isTypeSupported('audio/mp4')) {
+        recorder = new MediaRecorder(stream, { mimeType: 'audio/mp4' });
+      } else {
+        recorder = new MediaRecorder(stream);
+      }
+      
       const chunks = [];
 
       recorder.ondataavailable = (e) => {
-        chunks.push(e.data);
+        if (e.data.size > 0) {
+          chunks.push(e.data);
+        }
       };
 
       recorder.onstop = () => {
-        const audioBlob = new Blob(chunks, { type: 'audio/wav' });
-        downloadRecording(audioBlob);
+        const audioBlob = new Blob(chunks, { type: recorder.mimeType });
+        const url = URL.createObjectURL(audioBlob);
+        setRecordingURL(url);
         
-        // Stop all tracks from the stream
+        // 로컬 저장을 위한 파일 형식 결정
+        const fileExtension = recorder.mimeType.includes('webm') ? 'webm' : 
+                             recorder.mimeType.includes('mp4') ? 'm4a' : 'wav';
+        
+        // 자동 다운로드
+        saveRecording(audioBlob, fileExtension);
+        
+        // 스트림 정리
         stream.getTracks().forEach(track => track.stop());
       };
 
-      recorder.start();
+      recorder.start(100); // 100ms 간격으로 데이터 수집
       setMediaRecorder(recorder);
       setAudioChunks([]);
     } catch (error) {
       console.error('Error accessing microphone:', error);
       setIsRecording(false);
+      alert('마이크 접근에 실패했습니다. 마이크 권한을 확인해주세요.');
     }
   };
 
-  // Download recording
-  const downloadRecording = (blob) => {
+  // Save recording to local device
+  const saveRecording = (blob, fileExtension) => {
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.style.display = 'none';
     a.href = url;
-    a.download = 'interview-recording.wav';
+    a.download = `interview-recording.${fileExtension}`;
     document.body.appendChild(a);
     a.click();
-    URL.revokeObjectURL(url);
-    document.body.removeChild(a);
+    setTimeout(() => {
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    }, 100);
   };
 
   // Calculate timer percentage for the circle
@@ -154,6 +182,13 @@ const Interview = () => {
               </svg>
             </RecordButton>
           </RecordButtonContainer>
+          
+          {recordingURL && (
+            <PreviewSection>
+              <h3>녹음된 오디오</h3>
+              <audio controls src={recordingURL}></audio>
+            </PreviewSection>
+          )}
         </ControlsSection>
       </Content>
     </Container>
@@ -219,15 +254,30 @@ const ControlsSection = styled.div`
 `;
 
 const TimerContainer = styled.div`
-  margin-top: 270px;
+  margin-top: 200px;
 `;
 
 const RecordButtonContainer = styled.div`
-  margin-bottom: 270px;
+  margin: 40px 0;
   display: flex;
   justify-content: center;
 `;
 
+const PreviewSection = styled.div`
+  width: 100%;
+  text-align: center;
+  margin-bottom: 200px;
+  
+  h3 {
+    margin-bottom: 10px;
+    color: #333;
+  }
+  
+  audio {
+    width: 100%;
+    margin-top: 10px;
+  }
+`;
 
 const RecordButton = styled.button`
   width: 80px;
