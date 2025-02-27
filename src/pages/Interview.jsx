@@ -2,25 +2,58 @@
 
 // pages/InterviewPage.tsx
 import React, { useState, useEffect, useRef } from 'react';
+import { useNavigate } from 'react-router-dom';
 import styled from 'styled-components';
 import AiInterviewerGif from '../assets/AI_Interviewer.gif';
 import MainLogo from '../assets/logo.png';
 
+// 질문 3번이 나오도록
+const MAX_RECORDINGS = 3;
+
 const Interview = () => {
   const [isRecording, setIsRecording] = useState(false);
-  const [timer, setTimer] = useState(180); // 3 minutes in seconds
+  const [timer, setTimer] = useState(180);
   const [mediaRecorder, setMediaRecorder] = useState(null);
   const [audioChunks, setAudioChunks] = useState([]);
+  const [recordings, setRecordings] = useState([]);
+  const [recordingCount, setRecordingCount] = useState(0);
   const timerIntervalRef = useRef(null);
+  const navigate = useNavigate();
 
-  // Format time as MM:SS
+  useEffect(() => {
+    textToSpeech(); // 페이지 로드 시 자동 실행
+  }, []);
+
+  function textToSpeech() {
+    let text = document.getElementById("questionText").innerText;
+    let speech = new SpeechSynthesisUtterance();
+    speech.text = text;
+    speech.lang = "ko-KR"; // 한국어 설정
+    speech.volume = 1;
+    speech.rate = 1;
+    speech.pitch = 1;
+    
+    // 사용 가능한 한국어 음성을 선택 (옵션)
+    let voices = window.speechSynthesis.getVoices();
+    let koreanVoice = voices.find(voice => voice.lang === "ko-KR");
+    if (koreanVoice) {
+        speech.voice = koreanVoice;
+    }
+    
+    window.speechSynthesis.speak(speech);
+  }
+
+  // 음성 목록을 로드한 후 실행되도록 처리
+  window.speechSynthesis.onvoiceschanged = function() {
+    textToSpeech(); // 음성이 변경되면 실행
+  };
+
   const formatTime = (seconds) => {
     const minutes = Math.floor(seconds / 60);
     const remainingSeconds = seconds % 60;
     return `${minutes.toString().padStart(2, '0')}:${remainingSeconds.toString().padStart(2, '0')}`;
   };
 
-  // Start/stop timer
   useEffect(() => {
     if (isRecording && timer > 0) {
       timerIntervalRef.current = setInterval(() => {
@@ -39,22 +72,20 @@ const Interview = () => {
     return () => clearInterval(timerIntervalRef.current);
   }, [isRecording, timer]);
 
-  // Handle recording toggle
   const handleRecordToggle = () => {
     if (isRecording) {
-      // Stop recording
       if (mediaRecorder) {
         mediaRecorder.stop();
       }
       setIsRecording(false);
     } else {
-      // Start recording
-      startRecording();
-      setIsRecording(true);
+      if (recordingCount < MAX_RECORDINGS) {
+        startRecording();
+        setIsRecording(true);
+      }
     }
   };
 
-  // Start recording function
   const startRecording = async () => {
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
@@ -67,10 +98,18 @@ const Interview = () => {
 
       recorder.onstop = () => {
         const audioBlob = new Blob(chunks, { type: 'audio/wav' });
-        downloadRecording(audioBlob);
-        
-        // Stop all tracks from the stream
+        setRecordings((prev) => [...prev, audioBlob]);
+        downloadRecording(audioBlob, recordings.length + 1);
         stream.getTracks().forEach(track => track.stop());
+        
+        if (recordingCount + 1 < MAX_RECORDINGS) {
+          setRecordingCount(recordingCount + 1);
+          setTimer(180);
+          setTimeout(() => startRecording(), 1000);
+        } else {
+          setIsRecording(false);
+          navigate('/result');
+        }
       };
 
       recorder.start();
@@ -82,22 +121,20 @@ const Interview = () => {
     }
   };
 
-  // Download recording
-  const downloadRecording = (blob) => {
+  const downloadRecording = (blob, index) => {
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.style.display = 'none';
     a.href = url;
-    a.download = 'interview-recording.wav';
+    a.download = `interview-recording-${index}.wav`;
     document.body.appendChild(a);
     a.click();
     URL.revokeObjectURL(url);
     document.body.removeChild(a);
   };
 
-  // Calculate timer percentage for the circle
   const timerPercentage = (timer / 180) * 100;
-  const circumference = 2 * Math.PI * 80; // Circle radius is 80
+  const circumference = 2 * Math.PI * 80;
   const dashOffset = circumference * (1 - timerPercentage / 100);
 
   return (
@@ -107,47 +144,23 @@ const Interview = () => {
           <Logo>
             <img src={MainLogo} alt='Je myeon so Logo'/>
           </Logo>
+          <InnerContainer>
           <InterviewerVideo>
             <img src={AiInterviewerGif} alt="AI Interviewer" />
+            <QuestionText id='questionText' onClick={textToSpeech}>지원자 본인의 자기소개를 1분동안 해보세요.</QuestionText>
           </InterviewerVideo>
+          </InnerContainer>
         </InterviewerSection>
         <ControlsSection>
           <TimerContainer>
             <svg width="170" height="170" viewBox="0 0 170 170">
-              <circle
-                cx="85"
-                cy="85"
-                r="80"
-                fill="none"
-                stroke="#EEEEEE"
-                strokeWidth="10"
-              />
-              <circle
-                cx="85"
-                cy="85"
-                r="80"
-                fill="none"
-                stroke="#6042ff"
-                strokeWidth="10"
-                strokeDasharray={circumference}
-                strokeDashoffset={dashOffset}
-                transform="rotate(-90 85 85)"
-              />
-              <text
-                x="85"
-                y="90"
-                textAnchor="middle"
-                dominantBaseline="middle"
-                fontSize="34"
-                fontWeight="bold"
-                fill="#000"
-              >
-                {formatTime(timer)}
-              </text>
+              <circle cx="85" cy="85" r="80" fill="none" stroke="#EEEEEE" strokeWidth="10" />
+              <circle cx="85" cy="85" r="80" fill="none" stroke="#6042ff" strokeWidth="10" strokeDasharray={circumference} strokeDashoffset={dashOffset} transform="rotate(-90 85 85)" />
+              <text x="85" y="90" textAnchor="middle" dominantBaseline="middle" fontSize="34" fontWeight="bold" fill="#000">{formatTime(timer)}</text>
             </svg>
           </TimerContainer>
           <RecordButtonContainer>
-            <RecordButton isRecording={isRecording} onClick={handleRecordToggle}>
+            <RecordButton isRecording={isRecording} onClick={handleRecordToggle} disabled={recordingCount >= MAX_RECORDINGS}>
               <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                 <path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z"></path>
                 <path d="M19 10v2a7 7 0 0 1-14 0v-2"></path>
@@ -209,6 +222,8 @@ const InterviewerVideo = styled.div`
   }
 `;
 
+const InnerContainer = styled.div``;
+const QuestionText = styled.p``;
 const ControlsSection = styled.div`
   width: 400px;
   flex:1;
