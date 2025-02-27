@@ -2,9 +2,8 @@
 
 import React, { useState } from "react";
 import styled from "styled-components";
-import GOOGLE_API_KEY from "..../"
 
-const API_KEY = "AIzaSyBMqvNlCav0GkXLwmQFYgzeo0w_PxR4XKA";
+const API_KEY = process.env.GOOGLE_API_KEY
 const API_URL = `https://texttospeech.googleapis.com/v1/text:synthesize?key=${API_KEY}`;
 
 const GoogleTTS = () => {
