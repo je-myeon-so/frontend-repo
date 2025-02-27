@@ -7,8 +7,14 @@ import styled from 'styled-components';
 import AiInterviewerGif from '../assets/AI_Interviewer.gif';
 import MainLogo from '../assets/logo.png';
 
+const questionText = "지원자 본인의 자기소개를 1분 동안 해보세요.";
+
 // 질문 3번이 나오도록
 const MAX_RECORDINGS = 3;
+
+// Google TTS API 설정
+const API_KEY = process.env.REACT_APP_GOOGLE_API_KEY;
+const API_URL = `https://texttospeech.googleapis.com/v1/text:synthesize?key=${API_KEY}`;
 
 const Interview = () => {
   const [isRecording, setIsRecording] = useState(false);
@@ -17,14 +23,66 @@ const Interview = () => {
   const [audioChunks, setAudioChunks] = useState([]);
   const [recordings, setRecordings] = useState([]);
   const [recordingCount, setRecordingCount] = useState(0);
+  const [loading, setLoading] = useState(false);
   const timerIntervalRef = useRef(null);
   const navigate = useNavigate();
 
-  useEffect(() => {
-    textToSpeech(); // 페이지 로드 시 자동 실행
-  }, []);
+  // useEffect(() => {
+  //   googleTextToSpeech(); // 페이지 로드 시 자동 실행
+  // }, []);
 
-  function textToSpeech() {
+  // Google TTS API를 사용한 음성 합성 함수
+  const googleTextToSpeech = async () => {
+    if (!questionText) return;
+
+    setLoading(true);
+
+    try {
+      const response = await fetch(API_URL, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          input: { text: questionText },
+          voice: { languageCode: "ko-KR", ssmlGender: "FEMALE" },
+          audioConfig: { audioEncoding: "MP3" },
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error("Google TTS API 요청 실패");
+      }
+
+      const data = await response.json();
+      const audioContent = data.audioContent;
+      if (!audioContent) {
+        throw new Error("오디오 변환 실패");
+      }
+
+      // Base64 -> Blob 변환
+      const byteCharacters = atob(audioContent);
+      const byteNumbers = new Array(byteCharacters.length)
+        .fill(0)
+        .map((_, i) => byteCharacters.charCodeAt(i));
+      const byteArray = new Uint8Array(byteNumbers);
+      const audioBlob = new Blob([byteArray], { type: "audio/mp3" });
+
+      // Audio 객체 생성 및 재생
+      const audioUrl = window.URL.createObjectURL(audioBlob);
+      const audio = new Audio(audioUrl);
+      audio.play();
+    } catch (error) {
+      console.error("TTS 변환 실패:", error);
+      fallbackTextToSpeech();
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  
+  // 대체 음성 합성 방법 (Web Speech API)
+  const fallbackTextToSpeech = () => {
     let text = document.getElementById("questionText").innerText;
     let speech = new SpeechSynthesisUtterance();
     speech.text = text;
@@ -41,12 +99,14 @@ const Interview = () => {
     }
     
     window.speechSynthesis.speak(speech);
-  }
+  };
 
   // 음성 목록을 로드한 후 실행되도록 처리
-  window.speechSynthesis.onvoiceschanged = function() {
-    textToSpeech(); // 음성이 변경되면 실행
-  };
+  useEffect(() => {
+    window.speechSynthesis.onvoiceschanged = function() {
+      // 로드되면 필요한 경우 fallback 준비
+    };
+  }, []);
 
   const formatTime = (seconds) => {
     const minutes = Math.floor(seconds / 60);
@@ -129,7 +189,7 @@ const Interview = () => {
     a.download = `interview-recording-${index}.wav`;
     document.body.appendChild(a);
     a.click();
-    URL.revokeObjectURL(url);
+    window.URL.revokeObjectURL(url);
     document.body.removeChild(a);
   };
 
@@ -147,7 +207,14 @@ const Interview = () => {
           <InnerContainer>
           <InterviewerVideo>
             <img src={AiInterviewerGif} alt="AI Interviewer" />
-            <QuestionText id='questionText' onClick={textToSpeech}>지원자 본인의 자기소개를 1분동안 해보세요.</QuestionText>
+            <QuestionText 
+              id='questionText' 
+              onClick={googleTextToSpeech} 
+              disabled={loading}
+              style={{ cursor: 'pointer' }}
+            >
+              면접 시작
+            </QuestionText>
           </InterviewerVideo>
           </InnerContainer>
         </InterviewerSection>
@@ -222,11 +289,31 @@ const InterviewerVideo = styled.div`
   }
 `;
 
-const InnerContainer = styled.div``;
-const QuestionText = styled.p``;
+const InnerContainer = styled.div`
+  width: 100%;
+  display: flex;
+  justify-content: center;
+`;
+
+const QuestionText = styled.p`
+  padding: 15px;
+  background-color: rgba(255, 255, 255, 0.8);
+  position: absolute;
+  border-radius: 10px;
+  font-weight: bold;
+  text-align: center;
+  box-shadow: 0 3px 10px rgba(0, 0, 0, 0.1);
+  margin: 0;
+  
+  
+  &:hover {
+    background-color: rgba(255, 255, 255, 0.9);
+  }
+`;
+
 const ControlsSection = styled.div`
   width: 400px;
-  flex:1;
+  flex: 1;
   padding: 40px;
   display: flex;
   flex-direction: column;
@@ -243,7 +330,6 @@ const RecordButtonContainer = styled.div`
   display: flex;
   justify-content: center;
 `;
-
 
 const RecordButton = styled.button`
   width: 80px;
