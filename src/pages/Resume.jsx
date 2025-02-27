@@ -54,7 +54,7 @@ const Resume = () => {
     const requestData = { username, password };
   
     try {
-      const response = await fetch("/api/auth", {
+      const response = await fetch("http://3.35.220.161:8080/api/auth", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
