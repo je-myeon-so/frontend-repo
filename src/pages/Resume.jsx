@@ -46,6 +46,7 @@ const Resume = () => {
   
       console.log("가입 성공!");
       setMessage(`${username}님 환영합니다!`);
+      window.sessionStorage.setItem(username, password);
     } catch (error) {
       console.error("Error:", error);
       setMessage("네트워크 오류 발생");
@@ -91,8 +92,9 @@ const Resume = () => {
   
       setUploadStatus(`업로드 완료! 질문: ${JSON.stringify(data.question)}, 답변: ${JSON.stringify(data.answer)}`);
 
-      // ✅ 업로드 성공하면 "/interview" 페이지로 이동
-      navigate("/interview");
+      // 업로드 성공하면 "/interview" 페이지로 이동, 그 페이지로 username 전달
+      navigate("/interview", {state: {username}});
+      console.log('state username', username);
       
     } catch (error) {
       console.error('업로드 실패:', error);
