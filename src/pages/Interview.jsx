@@ -424,9 +424,9 @@ const Interview = () => {
   const [recordings, setRecordings] = useState([]);
   const [recordingCount, setRecordingCount] = useState(0);
   const [loading, setLoading] = useState(false);
-  const [currentQuestion, setCurrentQuestion] = useState(DEFAULT_QUESTION);
+  const [currentQuestion, setCurrentQuestion] = useState('');
   const [currentQuestionNum, setCurrentQuestionNum] = useState(1);
-  const [questionData, setQuestionData] = useState([]); // 질문 데이터 배열로 상태 초기화
+  const [questions, setQuestions] = useState([]); // 질문 데이터 배열
   const timerIntervalRef = useRef(null);
   const navigate = useNavigate();
 
@@ -445,25 +445,27 @@ const Interview = () => {
       }
       
       const data = await response.json();
-      console.log('API에서 받아온 질문:', data);
+      console.log(`API에서 받아온 질문 ${questionNum}:`, data);
       
-      // 응답 데이터를 questionData 상태에 저장
-      setQuestionData(prevData => {
-        // 이미 저장된 질문은 덮어쓰고, 새 질문은 추가
-        const newData = [...prevData];
-        newData[questionNum - 1] = data;
-        return newData;
+      // 질문 데이터 업데이트
+      setQuestions(prevQuestions => {
+        const newQuestions = [...prevQuestions];
+        newQuestions[questionNum - 1] = data;
+        return newQuestions;
       });
       
-      // questionData가 문자열인지 확인하고 현재 질문 설정
+      // 현재 질문 번호의 질문으로 업데이트
       if (typeof data === 'string') {
         setCurrentQuestion(data);
+      } else if (data && data.question) {
+        // 만약 API가 { question: "질문내용" } 형태로 응답한다면
+        setCurrentQuestion(data.question);
       } else {
         console.log('예상과 다른 응답 형식:', data);
         setCurrentQuestion(DEFAULT_QUESTION);
       }
     } catch (error) {
-      console.error('질문 가져오기 오류:', error);
+      console.error(`질문 ${questionNum} 가져오기 오류:`, error);
       setCurrentQuestion(DEFAULT_QUESTION);
     }
   };
@@ -471,11 +473,11 @@ const Interview = () => {
   // 컴포넌트 마운트 시 첫 번째 질문 가져오기
   useEffect(() => {
     fetchQuestion(currentQuestionNum);
-  }, [username, currentQuestionNum]); // currentQuestionNum 변경 시에도 실행되도록 수정
+  }, []); // currentQuestionNum 변경 시 fetchQuestion 자동 호출
 
   // 질문이 변경될 때마다 자동으로 음성 출력
   useEffect(() => {
-    if (currentQuestion) {
+    if (currentQuestion && currentQuestion !== "질문 시작") {
       googleTextToSpeech();
     }
   }, [currentQuestion]);
@@ -603,21 +605,23 @@ const Interview = () => {
         chunks.push(e.data);
       };
 
-      recorder.onstop = () => {
+      recorder.onstop = async () => {
         const audioBlob = new Blob(chunks, { type: 'audio/wav' });
-        downloadRecording(audioBlob);
-        
+        setRecordings(prev => [...prev, audioBlob]);
+        const recordingIndex = recordingCount + 1;
+        // downloadRecording(audioBlob, recordingIndex);
+        handleUpload(audioBlob);
         // Stop all tracks from the stream
         stream.getTracks().forEach(track => track.stop());
         
         if (recordingCount + 1 < MAX_RECORDINGS) {
-          setRecordingCount(recordingCount + 1);
-          setCurrentQuestionNum(prev => prev + 1);
-          // 다음 질문으로 상태 업데이트 (useEffect의 fetchQuestion 실행 트리거)
+          // 다음 질문 번호로 업데이트
+          const nextQuestionNum = currentQuestionNum + 1;
+          setRecordingCount(prev => prev + 1);
+          setCurrentQuestionNum(nextQuestionNum);
           setTimer(180);
         } else {
           setIsRecording(false);
-          navigate('/result');
         }
       };
 
@@ -627,6 +631,40 @@ const Interview = () => {
     } catch (error) {
       console.error('Error accessing microphone:', error);
       setIsRecording(false);
+    }
+  };
+
+  function timeout(delay: number) {
+    return new Promise( res => setTimeout(res, delay) );
+  }
+
+  const handleUpload = async (audioBlob) => {
+    const formData = new FormData();
+    formData.append("file", audioBlob, "interview-recording.wav");
+    formData.append("username", username);
+
+    try {
+      const response = await fetch(`http://3.35.220.161:8080/api/interview/question/${currentQuestionNum}/answer`, {
+        
+        method: "POST",
+        body: formData,
+      });
+
+      if (!response.ok) {
+        throw new Error("파일 업로드 실패");
+      }
+
+      const data = await response.json();
+
+      if (data.question.question_type == "면접 종료") {
+        navigate("/result", {state: {username}});
+      }
+
+      setCurrentQuestion(data.question.question_text);
+
+      console.log("업로드 성공:", data);
+    } catch (error) {
+      console.error("오류 발생:", error);
     }
   };
 
@@ -689,6 +727,7 @@ const Interview = () => {
     </Container>
   );
 };
+
 
 const Container = styled.div`
   width: 100%;

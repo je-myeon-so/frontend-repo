@@ -1,9 +1,11 @@
 // // 백엔드 API 연결
 import React, {useState, useEffect} from 'react';
+import { useLocation } from 'react-router-dom';
 import styled from 'styled-components';
 import MainLogo from '../assets/logo.png';
 import {BsGrid} from 'react-icons/bs';
 import {FaRegCommentDots, FaUser} from 'react-icons/fa';
+import { useNavigate } from 'react-router-dom';
 
 
 // 스타일 컴포넌트 정의
@@ -19,10 +21,19 @@ const Result = () => {
     "발음 실수": "#ffb7b7", // 연한 주황
   };
 
+  const location = useLocation();
+  const userid = location.state?.username || "user2";
+
   const [feedbackData, setFeedbackData] = useState({analysis_result:{analysis:[]}, original_answer: "", question: ""});
   const [activeQuestion, setActiveQuestion] = useState(1);
-  const [username, setUsername] = useState("user2");
+  const [username, setUsername] = useState(userid);
   const [searchUser, setSearchUser] = useState("");
+
+  const navigate = useNavigate();
+ 
+   // 기본값 설정
+  console.log('page load username:', userid);
+  
 
   const getFeedbackData = async (user, questionnum) => {
     try {
@@ -67,7 +78,9 @@ const Result = () => {
       <FlexContainer>
         {/* 사이드바 */}
         <Sidebar>
-          <Logo>
+          <Logo
+            onClick={() => navigate("/")}
+          >
             <img src={MainLogo} alt="Je myeon so Logo"/>
           </Logo>
           <MenuContainer>
@@ -107,6 +120,7 @@ const Result = () => {
         <MainContent>
           {/* 사용자 검색 */}
           <SearchContainer>
+            <div>
             <SearchInput
               type="text"
               value={searchUser}
@@ -115,6 +129,9 @@ const Result = () => {
               onKeyDown={(e) => e.key === "Enter" && handleSearch()}
             />
             <SearchButton onClick={handleSearch}>검색</SearchButton>
+            </div>
+
+            <HomeButton onClick={() => navigate("/")}>🏠 홈으로</HomeButton>
           </SearchContainer>
 
           {/* 질문 */}
@@ -288,9 +305,11 @@ const Suggestion = styled.p`
 `;
 
 const SearchContainer = styled.div`
-  display: flex;
-  align-items: center;
-  margin-bottom: 1rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-end: 3rem;
+    margin-bottom: 1rem;
 `;
 
 const SearchInput = styled.input`
@@ -349,4 +368,19 @@ const LegendColor = styled.div`
 const LegendText = styled.span`
   font-size: 0.9rem;
   color: #333;
+`;
+
+const HomeButton = styled.button`
+  padding: 0.5rem 1rem;
+  margin-left: 0.5rem;
+  background-color: #28a745; /* 녹색 */
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 1rem;
+  
+  &:hover {
+    background-color: #218838;
+  }
 `;
