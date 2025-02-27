@@ -5,7 +5,6 @@ import React, { useState, useEffect, useRef } from 'react';
 import styled from 'styled-components';
 import AiInterviewerGif from '../assets/AI_Interviewer.gif';
 import MainLogo from '../assets/logo.png';
-import { Link } from 'react-router-dom';
 
 const Interview = () => {
   const [isRecording, setIsRecording] = useState(false);
