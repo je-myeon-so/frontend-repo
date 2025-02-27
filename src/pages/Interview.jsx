@@ -413,8 +413,7 @@ const DEFAULT_QUESTION = "지원자 본인의 자기소개를 1분 동안 해보
 const MAX_RECORDINGS = 3;
 
 // Google TTS API 설정
-const API_KEY = process.env.REACT_APP_GOOGLE_API_KEY;
-const API_URL = `https://texttospeech.googleapis.com/v1/text:synthesize?key=${API_KEY}`;
+const API_URL = `https://texttospeech.googleapis.com/v1/text:synthesize?key=AIzaSyBMqvNlCav0GkXLwmQFYgzeo0w_PxR4XKA`;
 
 const Interview = () => {
   const [isRecording, setIsRecording] = useState(false);
@@ -633,10 +632,6 @@ const Interview = () => {
       setIsRecording(false);
     }
   };
-
-  function timeout(delay: number) {
-    return new Promise( res => setTimeout(res, delay) );
-  }
 
   const handleUpload = async (audioBlob) => {
     const formData = new FormData();
