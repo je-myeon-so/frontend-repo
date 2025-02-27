@@ -605,8 +605,9 @@ const Interview = () => {
 
       recorder.onstop = () => {
         const audioBlob = new Blob(chunks, { type: 'audio/wav' });
-        setRecordings((prev) => [...prev, audioBlob]);
-        downloadRecording(audioBlob, recordings.length + 1);
+        downloadRecording(audioBlob);
+        
+        // Stop all tracks from the stream
         stream.getTracks().forEach(track => track.stop());
         
         if (recordingCount + 1 < MAX_RECORDINGS) {
