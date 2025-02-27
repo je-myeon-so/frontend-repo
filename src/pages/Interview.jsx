@@ -1,3 +1,5 @@
+"use client";
+
 // pages/InterviewPage.tsx
 import React, { useState, useEffect, useRef } from 'react';
 import styled from 'styled-components';
@@ -67,7 +69,7 @@ const Interview = () => {
       recorder.onstop = () => {
         const audioBlob = new Blob(chunks, { type: 'audio/wav' });
         downloadRecording(audioBlob);
-        
+
         // Stop all tracks from the stream
         stream.getTracks().forEach(track => track.stop());
       };
