@@ -1,10 +1,8 @@
-"use client";
-
 import React, { useState } from "react";
 import styled from "styled-components";
 
-const API_KEY = process.env.GOOGLE_API_KEY
-const API_URL = `https://texttospeech.googleapis.com/v1/text:synthesize?key=${API_KEY}`;
+const REACT_APP_GOOGLE_API_KEY = process.env.REACT_APP_GOOGLE_API_KEY;
+const API_URL = `https://texttospeech.googleapis.com/v1/text:synthesize?key=${REACT_APP_GOOGLE_API_KEY}`;
 
 const GoogleTTS = () => {
   const [text, setText] = useState("");
