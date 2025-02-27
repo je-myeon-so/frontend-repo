@@ -4,7 +4,84 @@ import styled from 'styled-components';
 const Resume = () => {
   const [selectedFile, setSelectedFile] = useState(null);
   const [uploadStatus, setUploadStatus] = useState('');
+  const [username, setUsername] = useState("");
+  const [password, setPassword] = useState("");
+  const [message, setMessage] = useState("");
 
+  function checkExistData(value, dataName) {
+    if (value === "") {
+      alert(dataName + "입력해주세요");
+      return false;
+    }
+    return true;
+  }
+
+  // 로그인
+  // const handleSignUp = async () => {
+  //   const requestData = { username, password };
+  //   if (!checkExistData(username, "아이디를 "));
+  //   if (!checkExistData(password, "비밀번호를 "));
+  //   console.log(username);
+  //   console.log(password);
+
+  //   try {
+  //     const response = await fetch("http://43.201.112.86:8080/", {
+  //       method: "POST",
+  //       headers: {
+  //         "Content-Type": "application/json",
+  //       },
+  //       body: JSON.stringify(requestData),
+  //     });
+
+  //     if (response.status === 200) {
+  //       console.log("가입 성공!");
+  //       setMessage({username}+"님 환영합니다!");
+  //     } else if (response.status === 400) {
+  //       alert("가입 실패: 중복된 username");
+  //     } else {
+  //       setMessage("서버 오류 발생");
+  //     }
+  //   } catch (error) {
+  //     console.error("Error:", error);
+  //     setMessage("네트워크 오류 발생");
+  //   }
+  // };
+
+  const handleSignUp = async () => {
+    if (!checkExistData(username, "아이디를 ")) return;
+    if (!checkExistData(password, "비밀번호를 ")) return;
+  
+    const requestData = { username, password };
+  
+    try {
+      const response = await fetch("/api/auth", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(requestData),
+      });
+  
+      // 서버 응답 확인
+      if (!response.ok) {
+        if (response.status === 400) {
+          alert("가입 실패: 중복된 username");
+        } else {
+          setMessage("서버 오류 발생");
+        }
+        return;
+      }
+  
+      console.log("가입 성공!");
+      setMessage(`${username}님 환영합니다!`); // ← 문자열 합성 방식 수정
+  
+    } catch (error) {
+      console.error("Error:", error);
+      setMessage("네트워크 오류 발생");
+    }
+  };
+  
+  // 파일 유형 PDF로 제한
   const handleFileChange = (event) => {
     const file = event.target.files[0];
     if (file && file.type === 'application/pdf') {
@@ -15,6 +92,7 @@ const Resume = () => {
     }
   };
 
+  // 파일 업로드
   const handleUpload = async () => {
     if (!selectedFile) {
       alert('업로드할 PDF 파일을 선택해주세요.');
@@ -26,8 +104,8 @@ const Resume = () => {
 
     try {
       setUploadStatus('업로드 중...');
-      //TO-DO: AI 서버 만들면 URL 바꾸기
-      const response = await fetch('https://your-ai-server.com/upload', {
+      // AI 서버 만들면 URL 바꾸기
+      const response = await fetch('', {
         method: 'POST',
         body: formData,
       });
@@ -45,6 +123,20 @@ const Resume = () => {
       <LeftSection>
         <Title>Jemyeonso</Title>
         <Subtitle>"제대로 된 면접을 소개합니다"</Subtitle>
+        <InputContainer>
+        <UserIdInput 
+          type='id' 
+          placeholder='ID'
+          value={username}
+          onChange={(e) => setUsername(e.target.value)}/>
+        <UserPwInput 
+          type='password' 
+          placeholder='PW'
+          value={password}
+          onChange={(e) => setPassword(e.target.value)}/>
+        <SubmitBtn onClick={handleSignUp}>Sign In</SubmitBtn>
+        {message && <Message success={message.includes("환영합니다")}>{message}</Message>}
+        </InputContainer>
       </LeftSection>
       <RightSection>
         <input
@@ -105,6 +197,26 @@ const Subtitle = styled.p`
   margin-top: 10px;
 `;
 
+const Message = styled.p`
+
+`;
+
+const InputContainer = styled.div`
+
+`;
+const UserIdInput = styled.input`
+  border: 1px gray solid;
+  border-radius: 3px;
+`;
+const UserPwInput = styled.input`
+  border: 1px gray solid;
+  border-radius: 3px;
+  margin-left: 10px;
+`;
+
+const SubmitBtn = styled.button`
+  margin-left: 10px;
+`;
 const AddButton = styled.div`
   display: flex;
   flex-direction: column;
