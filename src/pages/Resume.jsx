@@ -36,6 +36,7 @@ const Resume = () => {
       });
   
       if (!response.ok) {
+       console.log(username);
         if (response.status === 400) {
           alert("가입 실패: 중복된 username");
         } else {
