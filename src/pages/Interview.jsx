@@ -1,15 +1,16 @@
+"use client";
+
+// pages/InterviewPage.tsx
 import React, { useState, useEffect, useRef } from 'react';
 import styled from 'styled-components';
 import AiInterviewerGif from '../assets/AI_Interviewer.gif';
 import MainLogo from '../assets/logo.png';
-import { Link } from 'react-router-dom';
 
 const Interview = () => {
   const [isRecording, setIsRecording] = useState(false);
   const [timer, setTimer] = useState(180); // 3 minutes in seconds
   const [mediaRecorder, setMediaRecorder] = useState(null);
   const [audioChunks, setAudioChunks] = useState([]);
-  const [recordingURL, setRecordingURL] = useState(null);
   const timerIntervalRef = useRef(null);
 
   // Format time as MM:SS
@@ -53,54 +54,45 @@ const Interview = () => {
     }
   };
 
+  // Start recording function
   const startRecording = async () => {
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      const options = { mimeType: 'audio/webm;codecs=opus' };
-      const recorder = new MediaRecorder(stream, options);
+      const recorder = new MediaRecorder(stream);
       const chunks = [];
 
       recorder.ondataavailable = (e) => {
-        if (e.data.size > 0) {
-          chunks.push(e.data);
-        }
+        chunks.push(e.data);
       };
 
-      recorder.onstop = async () => {
-        const audioBlob = new Blob(chunks, { type: recorder.mimeType });
-        await uploadRecording(audioBlob);
+      recorder.onstop = () => {
+        const audioBlob = new Blob(chunks, { type: 'audio/wav' });
+        downloadRecording(audioBlob);
+        
+        // Stop all tracks from the stream
         stream.getTracks().forEach(track => track.stop());
       };
 
       recorder.start();
       setMediaRecorder(recorder);
+      setAudioChunks([]);
     } catch (error) {
       console.error('Error accessing microphone:', error);
       setIsRecording(false);
-      alert('마이크 접근에 실패했습니다. 마이크 권한을 확인해주세요.');
     }
   };
 
-  const uploadRecording = async (blob) => {
-    const formData = new FormData();
-    formData.append('file', blob, 'recording.webm');
-
-    try {
-      const response = await fetch('http://3.36.152.238:8080/upload', {
-        method: 'POST',
-        body: formData,
-        mode: 'cors',
-        headers: {
-          'Access-Control-Allow-Origin': '*',
-        },
-      });
-      if (!response.ok) {
-        throw new Error('서버 업로드 실패');
-      }
-      console.log('파일 업로드 성공');
-    } catch (error) {
-      console.error('파일 업로드 중 오류 발생:', error);
-    }
+  // Download recording
+  const downloadRecording = (blob) => {
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.style.display = 'none';
+    a.href = url;
+    a.download = 'interview-recording.wav';
+    document.body.appendChild(a);
+    a.click();
+    URL.revokeObjectURL(url);
+    document.body.removeChild(a);
   };
 
   // Calculate timer percentage for the circle
@@ -163,13 +155,6 @@ const Interview = () => {
               </svg>
             </RecordButton>
           </RecordButtonContainer>
-          
-          {recordingURL && (
-            <PreviewSection>
-              <h3>녹음된 오디오</h3>
-              <audio controls src={recordingURL}></audio>
-            </PreviewSection>
-          )}
         </ControlsSection>
       </Content>
     </Container>
@@ -235,30 +220,15 @@ const ControlsSection = styled.div`
 `;
 
 const TimerContainer = styled.div`
-  margin-top: 200px;
+  margin-top: 270px;
 `;
 
 const RecordButtonContainer = styled.div`
-  margin: 40px 0;
+  margin-bottom: 270px;
   display: flex;
   justify-content: center;
 `;
 
-const PreviewSection = styled.div`
-  width: 100%;
-  text-align: center;
-  margin-bottom: 200px;
-  
-  h3 {
-    margin-bottom: 10px;
-    color: #333;
-  }
-  
-  audio {
-    width: 100%;
-    margin-top: 10px;
-  }
-`;
 
 const RecordButton = styled.button`
   width: 80px;
