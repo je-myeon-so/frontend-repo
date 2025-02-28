@@ -495,7 +495,7 @@ const Interview = () => {
         },
         body: JSON.stringify({
           input: { text: currentQuestion },
-          voice: { languageCode: "ko-KR", ssmlGender: "FEMALE" },
+          voice: { languageCode: "ko-KR", ssmlGender: "MALE" },
           audioConfig: { audioEncoding: "MP3" },
         }),
       });
